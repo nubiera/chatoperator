@@ -66,6 +66,9 @@ Thumbs.db
 src/cache/*.json
 !src/cache/.gitkeep
 
+# Session Storage
+.sessions/
+
 # Selenium
 *.png
 *.jpg

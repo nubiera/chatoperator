@@ -15,7 +15,7 @@ from src.module1_analyzer.cache_writer import write_cache
 from src.module1_analyzer.dom_extractor import extract_dom
 from src.module1_analyzer.gemini_client import GeminiClient
 from src.module1_analyzer.screenshot_capturer import capture_screenshot
-from src.selenium_utils.driver_factory import create_driver
+from src.selenium_utils.driver_factory import create_driver, save_driver_session
 from src.utils.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -66,13 +66,15 @@ class InterfaceAnalyzer:
         logger.info(f"Starting analysis for platform: {platform_name}")
         logger.info(f"URL: {url}")
 
-        # Create driver
-        driver = create_driver(headless=headless, browser=settings.DEFAULT_BROWSER)
+        # Create driver with session support
+        driver = create_driver(
+            headless=headless,
+            browser=settings.DEFAULT_BROWSER,
+            platform_name=platform_name,
+            url=url,
+        )
 
         try:
-            # Navigate to platform
-            logger.info(f"Navigating to {url}...")
-            driver.get(url)
 
             # Wait for page to load and dynamic content
             logger.info(f"Waiting {wait_after_load}s for page content to load...")
@@ -123,6 +125,9 @@ class InterfaceAnalyzer:
             raise
 
         finally:
+            # Save session before cleanup
+            save_driver_session(driver, platform_name)
+
             # Clean up
             logger.info("Closing browser...")
             driver.quit()

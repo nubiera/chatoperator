@@ -106,6 +106,36 @@ LOG_LEVEL=INFO
 
 ---
 
+## 🔐 Session Persistence
+
+**New!** ChatOperator now automatically saves and reuses browser sessions, so you only need to log in once per platform!
+
+### How It Works
+
+- **First run**: Log in manually (QR code, password, etc.)
+- **Subsequent runs**: Automatically logs in using saved cookies
+- **Shared across modules**: One login works for analyzer, operator, AND archiver
+- **Platform-specific**: Each platform (Tinder, WhatsApp, etc.) has its own session
+
+### Session Files
+
+Sessions are stored in `.sessions/` directory (ignored by git):
+```
+.sessions/
+├── tinder_cookies.pkl
+├── whatsapp_web_cookies.pkl
+└── telegram_web_cookies.pkl
+```
+
+### Force Fresh Login
+
+Use `--fresh-login` flag to ignore saved session and log in again:
+```bash
+uv run python scripts/archive_conversations.py "Tinder" --fresh-login
+```
+
+---
+
 ## 📖 Usage
 
 ### Step 1: Analyze a Chat Platform (Module 1)

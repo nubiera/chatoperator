@@ -11,7 +11,7 @@ from src.module2_operator.conversation_reader import ConversationReader
 from src.module2_operator.message_sender import MessageSender
 from src.module2_operator.polling_loop import PollingLoop
 from src.module2_operator.round_robin import RoundRobinScheduler
-from src.selenium_utils.driver_factory import create_driver
+from src.selenium_utils.driver_factory import create_driver, save_driver_session
 from src.utils.exceptions import (
     RecalibrationRequiredException,
     SelectorNotFoundException,
@@ -32,13 +32,19 @@ class ChatOperator:
             platform_name: Name of the platform to operate on
             cache_dir: Cache directory containing platform configs
         """
+        # Store platform name for session management
+        self.platform_name = platform_name
+
         # Load configuration
         self.config = load_cache(platform_name, cache_dir)
         logger.info(f"Loaded configuration for {self.config.platform_name}")
 
-        # Create driver (headless for production)
+        # Create driver with session support (headless for production)
         self.driver = create_driver(
-            headless=settings.HEADLESS_MODE, browser=settings.DEFAULT_BROWSER
+            headless=settings.HEADLESS_MODE,
+            browser=settings.DEFAULT_BROWSER,
+            platform_name=platform_name,
+            url=str(self.config.url),
         )
 
         # Initialize components
@@ -69,6 +75,10 @@ class ChatOperator:
             # Authenticate
             logger.info("Step 1: Authenticating...")
             self.authenticator.ensure_authenticated(manual_wait=manual_login_wait)
+
+            # Save session after successful authentication
+            logger.debug("Saving session after authentication...")
+            save_driver_session(self.driver, self.platform_name)
 
             # Main operation loop
             logger.info("Step 2: Starting main operation loop...")
@@ -128,6 +138,9 @@ class ChatOperator:
         except KeyboardInterrupt:
             logger.info("Shutting down...")
         finally:
+            # Save session before cleanup
+            save_driver_session(self.driver, self.platform_name)
+
             # Cleanup
             logger.info("Closing browser...")
             self.driver.quit()
