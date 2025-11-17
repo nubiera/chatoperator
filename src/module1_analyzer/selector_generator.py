@@ -57,14 +57,95 @@ Analyze the provided screenshot and HTML structure to identify UI elements for a
 - Validate selectors against the provided HTML'''
 
 
-def build_analysis_prompt(platform_name: str) -> str:
+ARCHIVE_SELECTOR_EXTENSION = '''
+
+**Additional Archive Elements** (for conversation downloading):
+
+7. **conversation_item**: Individual conversation/match item in the list
+   - Clickable items representing each chat in the conversation list
+   - Should be specific enough to select one conversation at a time
+
+8. **profile_name**: User/match name displayed in the conversation
+   - The name of the person you're chatting with
+   - Usually in header or profile section
+
+9. **profile_picture**: Profile picture element or URL
+   - Main profile photo selector
+   - Should point to img element or element with background-image
+
+10. **profile_bio**: User bio/description text (optional)
+    - About section or bio text
+    - Set to null if not available
+
+11. **profile_age**: Age display (optional)
+    - User's age if shown
+    - Set to null if not available
+
+12. **profile_distance**: Distance display (optional)
+    - Distance indicator (e.g., "2 miles away")
+    - Set to null if not available
+
+13. **message_timestamp**: Timestamp for each message (optional)
+    - Time/date indicator for messages
+    - Set to null if not consistently available
+
+14. **message_container**: Container holding all messages in a conversation
+    - The scrollable area containing message history
+    - Parent element of all message bubbles
+
+15. **scroll_container**: Scrollable container for loading history
+    - Element that needs to be scrolled to load older messages
+    - Often the same as message_container
+
+16. **all_profile_pictures**: Selector for all profile photos in gallery (optional)
+    - For platforms with multiple profile photos
+    - Set to null if only one profile picture
+
+**Updated Output Format**:
+{{
+  "selectors": {{
+    "input_field": "css_selector_here",
+    "send_button": "css_selector_here",
+    "message_bubble_user": "css_selector_here",
+    "message_bubble_bot": "css_selector_here_or_null",
+    "conversation_list": "css_selector_here",
+    "unread_indicator": "css_selector_here"
+  }},
+  "archive_selectors": {{
+    "conversation_item": "css_selector_here",
+    "profile_name": "css_selector_here",
+    "profile_picture": "css_selector_here",
+    "profile_bio": "css_selector_here_or_null",
+    "profile_age": "css_selector_here_or_null",
+    "profile_distance": "css_selector_here_or_null",
+    "message_timestamp": "css_selector_here_or_null",
+    "message_container": "css_selector_here",
+    "scroll_container": "css_selector_here",
+    "all_profile_pictures": "css_selector_here_or_null"
+  }}
+}}'''
+
+
+def build_analysis_prompt(platform_name: str, include_archive: bool = False) -> str:
     """
     Build the analysis prompt for Gemini.
 
     Args:
         platform_name: Name of the chat platform
+        include_archive: Whether to include archive selector extraction
 
     Returns:
         Formatted prompt string
     """
-    return SELECTOR_PROMPT_TEMPLATE.format(platform_name=platform_name)
+    base_prompt = SELECTOR_PROMPT_TEMPLATE.format(platform_name=platform_name)
+
+    if include_archive:
+        # Replace the output format section with archive-enabled version
+        base_prompt = base_prompt.replace(
+            '**Output Format** (JSON only, no markdown):',
+            '**Output Format** (JSON only, no markdown) - WITH ARCHIVE SELECTORS:'
+        )
+        # Remove the old output format and add the new one
+        base_prompt = base_prompt.split('**Output Format**')[0] + ARCHIVE_SELECTOR_EXTENSION
+
+    return base_prompt

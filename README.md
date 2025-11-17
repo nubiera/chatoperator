@@ -7,16 +7,18 @@
 
 ## 🎯 Overview
 
-ChatOperator is a **dual-module system** that enables automated chatbot responses across multiple web chat platforms that lack official APIs. It uses:
+ChatOperator is a **multi-module system** that enables automated chatbot responses and conversation archival across multiple web chat platforms that lack official APIs. It includes:
 
 - **Module 1 (Analyzer)**: AI vision (Gemini) to generate configuration caches by analyzing web interfaces
 - **Module 2 (Operator)**: Deterministic Selenium-based automation for fast, cost-effective daily operations
+- **Module 3 (Archiver)**: Download and export full conversation histories with profile pictures and metadata
 
 ### Key Features
 
 ✅ **AI-Powered Configuration** - Uses Google Gemini Vision API to automatically detect chat interface elements
 ✅ **Self-Healing** - Detects selector failures and triggers automatic recalibration
 ✅ **Round-Robin Scheduling** - Efficiently manages multiple concurrent conversations
+✅ **Conversation Archival** - Download full chat histories with profiles, pictures, and timestamps
 ✅ **Cost-Optimized** - Separates expensive AI analysis from daily operations
 ✅ **Platform Agnostic** - Works with any web-based chat interface
 ✅ **Headless Operation** - Runs in background without UI (configurable)
@@ -155,6 +157,51 @@ uv run python scripts/run_operator.py "WhatsApp Web" --manual-wait 120
 5. Sends chatbot responses automatically
 
 **Press `Ctrl+C` to stop the operator gracefully.**
+
+### Step 4: Archive Conversations (Module 3) - Optional
+
+Download all your conversations with full history, profile pictures, and metadata:
+
+```bash
+# First, analyze the platform with archive selectors
+uv run python scripts/analyze_platform.py "Tinder" "https://tinder.com" --archive
+
+# Then run the archiver
+uv run python scripts/archive_conversations.py "Tinder"
+
+# Archive to custom directory
+uv run python scripts/archive_conversations.py "Tinder" --output ./my_archives
+
+# Limit number of conversations
+uv run python scripts/archive_conversations.py "Tinder" --max-conversations 10
+
+# With longer manual login wait
+uv run python scripts/archive_conversations.py "Tinder" --manual-wait 120
+```
+
+**What happens:**
+1. Browser opens and you manually log in (QR code, etc.)
+2. Archiver iterates through all conversations
+3. For each conversation:
+   - Extracts profile information (name, age, bio, distance)
+   - Downloads all profile pictures
+   - Scrolls to load full message history
+   - Exports to Markdown with timestamps
+   - Saves profile metadata as JSON
+
+**Output structure:**
+```
+conversations/
+├── john_doe/
+│   ├── conversation.md        # Full chat with timestamps
+│   ├── profile.json           # Name, bio, age, distance
+│   ├── profile_picture_1.jpg
+│   └── profile_picture_2.jpg
+├── jane_smith/
+│   ├── conversation.md
+│   ├── profile.json
+│   └── profile_picture.jpg
+```
 
 ---
 

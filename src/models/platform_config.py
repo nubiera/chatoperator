@@ -16,6 +16,21 @@ class SelectorsModel(BaseModel):
     unread_indicator: str = Field(..., description="Unread message indicator")
 
 
+class ArchiveSelectorsModel(BaseModel):
+    """Additional selectors for conversation archival."""
+
+    conversation_item: str = Field(..., description="Individual conversation/match item in list")
+    profile_name: str = Field(..., description="User/match name selector")
+    profile_picture: str = Field(..., description="Profile picture URL/element selector")
+    profile_bio: str | None = Field(None, description="User bio/description selector")
+    profile_age: str | None = Field(None, description="Age selector")
+    profile_distance: str | None = Field(None, description="Distance selector")
+    message_timestamp: str | None = Field(None, description="Message timestamp selector")
+    message_container: str = Field(..., description="Container holding all messages")
+    scroll_container: str = Field(..., description="Scrollable container for loading history")
+    all_profile_pictures: str | None = Field(None, description="Selector for all profile photos in gallery")
+
+
 class WaitTimeoutsModel(BaseModel):
     """Timeout configurations in seconds."""
 
@@ -33,4 +48,7 @@ class PlatformConfig(BaseModel):
     url: HttpUrl
     last_updated: datetime
     selectors: SelectorsModel
+    archive_selectors: ArchiveSelectorsModel | None = Field(
+        None, description="Optional selectors for conversation archival"
+    )
     wait_timeouts: WaitTimeoutsModel = Field(default_factory=WaitTimeoutsModel)

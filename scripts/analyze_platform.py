@@ -53,6 +53,11 @@ Examples:
         default="body",
         help="CSS selector to focus DOM extraction (default: body)",
     )
+    parser.add_argument(
+        "--archive",
+        action="store_true",
+        help="Include archive selectors for conversation downloading",
+    )
 
     args = parser.parse_args()
 
@@ -79,6 +84,8 @@ Examples:
         # Run analysis
         logger.info(f"Analyzing platform: {args.platform_name}")
         logger.info(f"URL: {args.url}")
+        if args.archive:
+            logger.info("Archive mode: Will extract conversation download selectors")
 
         config = analyzer.analyze_platform(
             platform_name=args.platform_name,
@@ -86,6 +93,7 @@ Examples:
             wait_after_load=args.wait,
             headless=not args.no_headless,
             focus_selector=args.focus,
+            include_archive=args.archive,
         )
 
         # Display results

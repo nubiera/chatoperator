@@ -8,6 +8,7 @@ from src.config.settings import settings
 from src.models.platform_config import (
     PlatformConfig,
     SelectorsModel,
+    ArchiveSelectorsModel,
     WaitTimeoutsModel,
 )
 from src.module1_analyzer.cache_writer import write_cache
@@ -42,6 +43,7 @@ class InterfaceAnalyzer:
         wait_after_load: int = 5,
         headless: bool = False,
         focus_selector: str = "body",
+        include_archive: bool = False,
     ) -> PlatformConfig:
         """
         Analyze a chat platform and generate configuration cache.
@@ -52,6 +54,7 @@ class InterfaceAnalyzer:
             wait_after_load: Seconds to wait after page load for JS (default: 5)
             headless: Run browser in headless mode (default: False for initial analysis)
             focus_selector: CSS selector to focus DOM extraction (default: "body")
+            include_archive: Include archive selectors for conversation downloading (default: False)
 
         Returns:
             Generated PlatformConfig
@@ -83,18 +86,31 @@ class InterfaceAnalyzer:
 
             # Analyze with Gemini
             logger.info("Analyzing interface with Gemini Vision API...")
-            selectors_dict = self.gemini_client.analyze_interface(
-                screenshot_bytes, html_content, platform_name
+            analysis_result = self.gemini_client.analyze_interface(
+                screenshot_bytes, html_content, platform_name, include_archive=include_archive
             )
 
             # Build configuration
-            config = PlatformConfig(
-                platform_name=platform_name,
-                url=url,
-                last_updated=datetime.now(),
-                selectors=SelectorsModel(**selectors_dict),
-                wait_timeouts=WaitTimeoutsModel(),  # Use defaults
-            )
+            # Handle both old format (just selectors dict) and new format (with archive_selectors)
+            if include_archive and isinstance(analysis_result, dict) and "archive_selectors" in analysis_result:
+                # New format with archive_selectors
+                config = PlatformConfig(
+                    platform_name=platform_name,
+                    url=url,
+                    last_updated=datetime.now(),
+                    selectors=SelectorsModel(**analysis_result["selectors"]),
+                    archive_selectors=ArchiveSelectorsModel(**analysis_result["archive_selectors"]),
+                    wait_timeouts=WaitTimeoutsModel(),  # Use defaults
+                )
+            else:
+                # Old format or regular mode - just selectors
+                config = PlatformConfig(
+                    platform_name=platform_name,
+                    url=url,
+                    last_updated=datetime.now(),
+                    selectors=SelectorsModel(**analysis_result),
+                    wait_timeouts=WaitTimeoutsModel(),  # Use defaults
+                )
 
             # Write cache
             cache_file = write_cache(config, self.cache_dir)

@@ -26,8 +26,8 @@ class GeminiClient:
         self.model = "gemini-2.5-flash"
 
     def analyze_interface(
-        self, screenshot_bytes: bytes, html_content: str, platform_name: str
-    ) -> dict[str, str]:
+        self, screenshot_bytes: bytes, html_content: str, platform_name: str, include_archive: bool = False
+    ) -> dict[str, str] | dict:
         """
         Analyze chat interface using vision + HTML.
 
@@ -35,9 +35,11 @@ class GeminiClient:
             screenshot_bytes: PNG screenshot bytes
             html_content: HTML/DOM structure
             platform_name: Name of the platform
+            include_archive: Whether to extract archive selectors
 
         Returns:
-            Dictionary mapping selector names to CSS selectors
+            Dictionary mapping selector names to CSS selectors (old format)
+            OR dictionary with "selectors" and "archive_selectors" keys (archive format)
 
         Raises:
             GeminiAPIException: If API call fails
@@ -46,7 +48,7 @@ class GeminiClient:
 
         try:
             # Build prompt
-            prompt = build_analysis_prompt(platform_name)
+            prompt = build_analysis_prompt(platform_name, include_archive=include_archive)
 
             # Truncate HTML if too long (to stay under token limits)
             max_html_length = 50000  # characters
@@ -111,29 +113,76 @@ class GeminiClient:
                 text = "\n".join(json_lines)
 
             # Parse JSON
-            selectors = json.loads(text)
+            result = json.loads(text)
 
-            # Validate required fields
-            required_fields = [
-                "input_field",
-                "send_button",
-                "message_bubble_user",
-                "conversation_list",
-                "unread_indicator",
-            ]
+            # Check if this is archive format (has "selectors" and "archive_selectors" keys)
+            if isinstance(result, dict) and "archive_selectors" in result:
+                # Archive format - validate both sections
+                selectors = result.get("selectors", {})
+                archive_selectors = result.get("archive_selectors", {})
 
-            for field in required_fields:
-                if field not in selectors:
-                    raise ValueError(f"Missing required field: {field}")
-                if not selectors[field] or selectors[field].strip() == "":
-                    raise ValueError(f"Empty selector for field: {field}")
+                # Validate required basic selectors
+                required_fields = [
+                    "input_field",
+                    "send_button",
+                    "message_bubble_user",
+                    "conversation_list",
+                    "unread_indicator",
+                ]
 
-            # message_bubble_bot is optional (can be None/null)
-            if "message_bubble_bot" not in selectors:
-                selectors["message_bubble_bot"] = None
+                for field in required_fields:
+                    if field not in selectors:
+                        raise ValueError(f"Missing required field in selectors: {field}")
+                    if not selectors[field] or selectors[field].strip() == "":
+                        raise ValueError(f"Empty selector for field: {field}")
 
-            logger.debug(f"Parsed selectors: {selectors}")
-            return selectors
+                # message_bubble_bot is optional (can be None/null)
+                if "message_bubble_bot" not in selectors:
+                    selectors["message_bubble_bot"] = None
+
+                # Validate required archive selectors
+                required_archive_fields = [
+                    "conversation_item",
+                    "profile_name",
+                    "profile_picture",
+                    "message_container",
+                    "scroll_container",
+                ]
+
+                for field in required_archive_fields:
+                    if field not in archive_selectors:
+                        raise ValueError(f"Missing required field in archive_selectors: {field}")
+                    if not archive_selectors[field] or archive_selectors[field].strip() == "":
+                        raise ValueError(f"Empty archive selector for field: {field}")
+
+                logger.debug(f"Parsed archive format with {len(selectors)} basic and {len(archive_selectors)} archive selectors")
+                return result
+
+            else:
+                # Old format - just selectors dict
+                selectors = result
+
+                # Validate required fields
+                required_fields = [
+                    "input_field",
+                    "send_button",
+                    "message_bubble_user",
+                    "conversation_list",
+                    "unread_indicator",
+                ]
+
+                for field in required_fields:
+                    if field not in selectors:
+                        raise ValueError(f"Missing required field: {field}")
+                    if not selectors[field] or selectors[field].strip() == "":
+                        raise ValueError(f"Empty selector for field: {field}")
+
+                # message_bubble_bot is optional (can be None/null)
+                if "message_bubble_bot" not in selectors:
+                    selectors["message_bubble_bot"] = None
+
+                logger.debug(f"Parsed selectors: {selectors}")
+                return selectors
 
         except (json.JSONDecodeError, ValueError) as e:
             logger.error(f"Failed to parse selector JSON: {e}")
