@@ -1,0 +1,29 @@
+# Google Gemini API
+GEMINI_API_KEY=AIzaSyDSwKuk-v_ehlO7zuLqJPzTH0KqUx0wzg0
+
+# Browser Configuration
+DEFAULT_BROWSER=chrome
+HEADLESS_MODE=true
+
+# Chatbot API (configure based on your chatbot service)
+# Example for OpenAI:
+CHATBOT_API_URL=https://api.openai.com/v1/chat/completions
+CHATBOT_API_KEY=your_chatbot_api_key_here
+
+# Example for custom chatbot:
+# CHATBOT_API_URL=https://api.your-chatbot.com/v1/chat
+# CHATBOT_API_KEY=your_custom_api_key
+
+# Logging
+LOG_LEVEL=INFO
+
+# Cache Directory
+CACHE_DIR=./src/cache
+
+# Polling Configuration (seconds)
+POLL_INTERVAL=10
+
+# Operation Timeouts (seconds)
+PAGE_LOAD_TIMEOUT=30
+ELEMENT_VISIBLE_TIMEOUT=10
+MESSAGE_SEND_TIMEOUT=5
