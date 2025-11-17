@@ -75,6 +75,12 @@ class InterfaceAnalyzer:
         )
 
         try:
+            # Navigate to platform if not already there
+            # (create_driver navigates only when loading session)
+            current_url = driver.current_url
+            if not current_url.startswith(url.rstrip("/")):
+                logger.info(f"Navigating to {url}...")
+                driver.get(url)
 
             # Wait for page to load and dynamic content
             logger.info(f"Waiting {wait_after_load}s for page content to load...")
